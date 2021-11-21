@@ -120,9 +120,9 @@ fi
 if [ ! -d /etc/nginx/modsec ]; then mkdir /etc/nginx/modsec; fi
 modsec_conf=/etc/nginx/modsec/modsecurity.conf
 cp /usr/local/src/ModSecurity/modsecurity.conf-recommended $modsec_conf
-sed 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' $modsec_conf
-sed 's/SecAuditLogParts ABIJDEFHZ/SecAuditLogParts ABCEFHJKZ/' $modsec_conf
-sed 's/SecResponseBodyAccess On/SecResponseBodyAccess Off/' $modsec_conf
+sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' $modsec_conf
+sed -i 's/SecAuditLogParts ABIJDEFHZ/SecAuditLogParts ABCEFHJKZ/' $modsec_conf
+sed -i 's/SecResponseBodyAccess On/SecResponseBodyAccess Off/' $modsec_conf
 
 # create and populate the main.conf file
 modsec_main_conf=/etc/nginx/modsec/main.conf
