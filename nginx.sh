@@ -10,6 +10,7 @@ nginx_conf=/etc/nginx/nginx.conf
 modsec_conf=/etc/nginx/modsec/modsecurity.conf
 modsec_main_conf=/etc/nginx/modsec/main.conf
 nginx_default_site=/etc/nginx/sites-available/default
+modsec_logrotate=/etc/logrotate.d/modsecurity
 
 ##
 # Install the lastest version of nginx
@@ -18,10 +19,10 @@ nginx_default_site=/etc/nginx/sites-available/default
 wget -q -O /etc/apt/trusted.gpg.d/nginx-mainline.gpg https://packages.sury.org/nginx-mainline/apt.gpg
 sh -c 'echo "deb https://packages.sury.org/nginx-mainline/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/nginx-mainline.list' > /dev/null
 
-apt-get update -y &> /dev/null
-apt-get upgrade -y &> /dev/null
+apt-get update -y
+apt-get upgrade -y
 apt-get -y install apt-transport-https lsb-release ca-certificates curl \
-	nginx-core nginx-common nginx nginx-full &> /dev/null
+	nginx-core nginx-common nginx nginx-full
 echo "Installed the latest version of nginx..."
 
 ##
@@ -38,7 +39,7 @@ nginx_source_code_link="deb-src $(echo "$nginx_binary_link" | cut -d' ' -f 2-)"
 
 echo $nginx_source_code_link >> $nginx_mainline_source
 echo "Uncommented the 'deb-src' line in your nginx-mainline.list file..."
-apt-get update -y &> /dev/null
+apt-get update -y
 
 ##
 # Download nginx source package
@@ -50,20 +51,21 @@ chown $username:$username /usr/local/src/ -R
 mkdir -p /usr/local/src/nginx
 cd /usr/local/src/nginx/
 
-apt-get -y install dpkg-dev > /dev/null
-apt-get source nginx &> /dev/null
+apt-get -y install dpkg-dev
+apt-get source nginx
 
 ##
 # Install libmodsecurity3
 ##
 
-apt-get -qq install gcc make build-essential autoconf automake libtool \
+apt-get -y install gcc make build-essential autoconf automake libtool \
         libcurl4-openssl-dev liblua5.3-dev libfuzzy-dev ssdeep \
         gettext pkg-config libpcre3 libpcre3-dev libxml2 libxml2-dev \
-        libcurl4 libgeoip-dev libyajl-dev doxygen libmaxminddb-dev git > /dev/null
+        libcurl4 libgeoip-dev libyajl-dev doxygen libmaxminddb-dev git
 
 if [ ! -d "$modsec_dir" ];
 then
+	echo "Cloning and configuring ModSecurity! This may take a while, don't close the terminal..."
 	git clone --depth 1 -b v3/master --single-branch https://github.com/SpiderLabs/ModSecurity $modsec_dir
 	cd $modsec_dir
 	git submodule init > /dev/null
@@ -90,8 +92,8 @@ if [ ! -d "$modsec_nginx_dir" ];
 then
 	git clone --depth 1 https://github.com/SpiderLabs/ModSecurity-nginx.git $modsec_nginx_dir > /dev/null
 	cd /usr/local/src/nginx/nginx-*
-	apt-get build-dep nginx &> /dev/null
-	apt-get -qq install uuid-dev > /dev/null
+	apt-get build-dep nginx
+	apt-get -qq install uuid-dev
 	./configure --with-compat --add-dynamic-module=$modsec_nginx_dir > /dev/null
 	make modules > /dev/null
 	cp objs/ngx_http_modsecurity_module.so /usr/share/nginx/modules/
@@ -129,6 +131,8 @@ if [ ! -f $modsec_main_conf ];
 then
 	echo Include /etc/nginx/modsec/modsecurity.conf >> $modsec_main_conf
 	echo "Created and configured the /etc/nginx/modsec/main.conf file..."
+else
+	echo "You already have a main.conf file configured! Skipping step..."
 fi
 
 # copy the Unicode mapping file
@@ -154,6 +158,8 @@ then
 	mv $coreruleset /etc/nginx/modsec
 	mv /etc/nginx/modsec/$coreruleset/crs-setup.conf.example /etc/nginx/modsec/$coreruleset/crs-setup.conf
 	echo "Moved your coreruleset directory to /etc/nginx/modsec..."
+else
+	echo "Your coreruleset directory is already in the right place! Skipping step..."
 fi
 
 if ! grep -q -c crs-setup.conf $modsec_main_conf;
@@ -201,8 +207,59 @@ else
 	echo "Already blocking undesirable HTTP methods! Skipping step..."
 fi
 
-systemctl reload nginx > /dev/null
-systemctl enable nginx
+##
+# Configure logging parameters for ModSecurity
+##
+
+if [ ! -f $modsec_rotate ]; then
+sed -i "$ a\
+/var/log/modsec_audit.log\
+{\
+        rotate 30\
+        daily\
+        missingok\
+        compress\
+        delaycompress\
+        notifempty\
+}" $modsec_rotate
+echo "Your logrotate folder now includes rules on how to handle ModSecurity logs..."
+else
+	echo "Your logrotate folder already has rules for ModSecurity logs! Skipping step..."
+fi
+
+##
+# Brotli compression algorithm with ModSecurity
+##
+
+apt -y install libnginx-mod-brotli
+if ! grep -q -c brotli $nginx_conf; then
+	sed -i '/gzip_types/a\
+        \
+	\##\
+	\# Brotli Settings\
+	\##\
+	\
+	brotli on;\
+        brotli_comp_level 6;\
+        brotli_static on;\
+        brotli_types application/atom+xml application/javascript application/json\
+		application/rss+xml application/vnd.ms-fontobject application/x-font-opentype\
+		application/x-font-truetype application/x-font-ttf application/x-javascript\
+		application/xhtml+xml application/xml font/eot font/opentype font/otf\
+		font/truetype image/svg+xml image/vnd.microsoft.icon image/x-icon\
+		image/x-win-bitmap text/css text/javascript text/plain text/xml;' $nginx_conf
+	echo "Added Brotli compression support to nginx.conf..."
+else
+	echo "Brotli compression support already enabled! Skipping step..."
+fi
+
+systemctl --quiet reload nginx
+systemctl --quiet enable nginx
+
+# prevent nginx from updating automatically, because the ModSecurity module
+# needs to be recompiled when updated. Another helper file will be coming
+# soon to address this problem
+apt-mark hold nginx
 
 printf "\n##############################\n"
 printf   "# FINISHED CONFIGURING NGINX #\n"
