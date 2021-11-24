@@ -12,3 +12,6 @@ sh ./helpful.sh
 
 # secure nginx setup
 sh ./nginx.sh
+
+# set up a mastodon server
+sh ./mastodon.sh
