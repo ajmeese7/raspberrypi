@@ -27,7 +27,7 @@ export modsec_logrotate="/etc/logrotate.d/modsecurity"' >> $bashrc
 	. $bashrc # alternative to source
 	echo "Your .bashrc has been configured with all the necessary variables..."
 else
-        echo "Your .bashrc already has the necessary variables configured..."
+	echo "Your .bashrc already has the necessary variables configured..."
 fi
 
 # Install the lastest version of nginx
