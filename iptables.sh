@@ -12,9 +12,10 @@ apt-get install iptables-persistent -y
 # whitelists only SSH, HTTP, and HTTPS ports
 iptables_conf=/etc/iptables/rules.v4
 if [ ! -f $iptables_conf ]; then
-echo '*filter
+echo '
+*filter
 
-#  Allow all loopback (lo0) traffic and drop all traffic to 127/8 that doesn't use lo0
+#  Allow all loopback (lo0) traffic and drop all traffic to 127/8 that doesn'\''t use lo0
 -A INPUT -i lo -j ACCEPT
 -A INPUT ! -i lo -d 127.0.0.0/8 -j REJECT
 
@@ -42,7 +43,8 @@ echo '*filter
 -A INPUT -j REJECT
 -A FORWARD -j REJECT
 
-COMMIT' >> $iptables_conf
+COMMIT
+' >> $iptables_conf
 
 	# with iptables-persistent, that configuration will be loaded at boot time.
 	# but since we are not rebooting right now, we need to load it manually for the first time.
