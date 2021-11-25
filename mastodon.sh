@@ -41,32 +41,65 @@ else
 fi
 
 # install rbenv
-apt-get remove ruby -y
-su mastodon << EOF
+su -l mastodon << EOF
 
-echo "Installing rbenv..."
-git clone https://github.com/rbenv/rbenv.git ~/.rbenv 2>/dev/null
-cd ~/.rbenv && src/configure && make -C src
-echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
-echo 'eval "$(rbenv init -)"' >> ~/.bashrc
+apt-get remove -y ruby
+apt-get update
+apt-get install -y git curl libssl-dev libreadline-dev zlib1g-dev \
+	autoconf bison build-essential libyaml-dev libreadline-dev \
+	libncurses5-dev libffi-dev libgdbm-dev
 
-# install Ruby build
-echo "Installing Ruby build..."
-git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build 2>/dev/null
+curl -sL https://github.com/rbenv/rbenv-installer/raw/main/bin/rbenv-installer | bash -
+if ! grep -q -c rbenv ~/.bashrc; then
+        echo "Adding rbenv to path..."
+        echo 'export PATH=$HOME/.rbenv/bin:$PATH' >> ~/.bashrc
+        echo 'eval "$(rbenv init - bash)"' >> ~/.bashrc
+else
+        echo "rbenv already on path..."
+fi
 
-source ~/.bashrc
+EOF
 
-# install Ruby 2.7.2
-echo "Installing Ruby 2.7.2 with rbenv..."
-RUBY_CONFIGURE_OPTS=--with-jemalloc rbenv install 2.7.2
+echo "\n\nBack to root...\n\n"
+
+su -l mastodon << EOF
+
+. ~/.bashrc
+RUBY_CONFIGURE_OPTS=--with-jemalloc rbenv install --verbose 2.7.2
 rbenv global 2.7.2
 gem install bundler --no-document
-rbenv rehash
 
-# end of the commands ran as user 'mastodon'
 EOF
 
 # set up postgres
 # https://stackoverflow.com/a/8546783/6456163
-sudo -u postgres psql postgres -c "CREATE USER mastodon CREATEDB;"
+sudo -u postgres psql postgres -c "CREATE USER mastodon CREATEDB;" 2>/dev/null
 echo "Created mastodon user in Postgres..."
+
+# set up mastodon
+su - mastodon << EOF
+
+git clone https://github.com/tootsuite/mastodon.git live && cd live
+git checkout $(git tag -l | grep -v 'rc[0-9]*$' | sort -V | tail -n 1)
+bundle config deployment 'true'
+bundle config without 'development test'
+bundle install -j$(getconf _NPROCESSORS_ONLN)
+yarn install --pure-lockfile
+
+# TODO: MAKE THIS NOT INTERACTIVE AND INSTEAD PRESET
+RAILS_ENV=production bundle exec rake mastodon:setup
+
+EOF
+
+# set up nginx
+cp /home/mastodon/live/dist/nginx.conf /etc/nginx/sites-available/mastodon
+ln -s /etc/nginx/sites-available/mastodon /etc/nginx/sites-enabled/mastodon
+# TODO ~> EDIT /etc/nginx/sites-available/mastodon TO REPLACE example.com WITH DOMAIN NAME
+
+certbot --nginx -d example.com
+cp /home/mastodon/live/dist/mastodon-*.service /etc/systemd/system/
+$EDITOR /etc/systemd/system/mastodon-*.service
+systemctl daemon-reload
+systemctl enable --now mastodon-web mastodon-sidekiq mastodon-streaming
+
+# SHOULD BE ABLE TO VISIT IN BROWSER AS OF HERE!
