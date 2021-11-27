@@ -11,24 +11,32 @@ else
 	bashrc=~/.bashrc
 fi
 
-if ! grep -q -c nginx_mainline_source $bashrc;
+if ! grep -q -c modsec_nginx_dir $bashrc;
 then
 echo '
 # See https://github.com/ajmeese7/raspberrypi for context
-export nginx_mainline_source="/etc/apt/sources.list.d/nginx-mainline.list"
-export modsec_dir="/usr/local/src/ModSecurity/"
 export modsec_nginx_dir="/usr/local/src/ModSecurity-nginx"
 export nginx_conf="/etc/nginx/nginx.conf"
 export modsec_conf="/etc/nginx/modsec/modsecurity.conf"
 export modsec_main_conf="/etc/nginx/modsec/main.conf"
 export nginx_default_site="/etc/nginx/sites-available/default"
-export modsec_logrotate="/etc/logrotate.d/modsecurity"' >> $bashrc
+export modsec_logrotate="/etc/logrotate.d/modsecurity"' | tee -a $bashrc
 
-	. $bashrc # alternative to source
 	echo "Your .bashrc has been configured with all the necessary variables..."
 else
 	echo "Your .bashrc already has the necessary variables configured..."
 fi
+
+# Redefine all the variables again in case the sourcing below doesn't work
+modsec_nginx_dir="/usr/local/src/ModSecurity-nginx"
+nginx_conf="/etc/nginx/nginx.conf"
+modsec_conf="/etc/nginx/modsec/modsecurity.conf"
+modsec_main_conf="/etc/nginx/modsec/main.conf"
+nginx_default_site="/etc/nginx/sites-available/default"
+modsec_logrotate="/etc/logrotate.d/modsecurity"
+
+# Reload bashrc just to be safe
+. $bashrc # alternative to source
 
 # Install the lastest version of nginx
 sh ./install_nginx.sh

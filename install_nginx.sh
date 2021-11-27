@@ -14,6 +14,7 @@ apt-get -y install apt-transport-https lsb-release ca-certificates curl \
 echo "Installed the latest version of nginx..."
 
 # Enable the source code repository in order to download nginx source code
+nginx_mainline_source="/etc/apt/sources.list.d/nginx-mainline.list"
 nginx_binary_link=`cat $nginx_mainline_source`
 nginx_source_code_link="deb-src $(echo "$nginx_binary_link" | cut -d' ' -f 2-)"
 	# takes a substring of $nginx_binary_link
