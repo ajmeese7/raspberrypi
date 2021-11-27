@@ -11,11 +11,10 @@ else
 	bashrc=~/.bashrc
 fi
 
-if ! grep -q -c modsec_nginx_dir $bashrc;
+if ! grep -q -c nginx_conf $bashrc;
 then
 echo '
 # See https://github.com/ajmeese7/raspberrypi for context
-export modsec_nginx_dir="/usr/local/src/ModSecurity-nginx"
 export nginx_conf="/etc/nginx/nginx.conf"
 export modsec_conf="/etc/nginx/modsec/modsecurity.conf"
 export modsec_main_conf="/etc/nginx/modsec/main.conf"
@@ -28,7 +27,6 @@ else
 fi
 
 # Redefine all the variables again in case the sourcing below doesn't work
-modsec_nginx_dir="/usr/local/src/ModSecurity-nginx"
 nginx_conf="/etc/nginx/nginx.conf"
 modsec_conf="/etc/nginx/modsec/modsecurity.conf"
 modsec_main_conf="/etc/nginx/modsec/main.conf"
