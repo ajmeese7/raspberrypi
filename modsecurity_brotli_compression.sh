@@ -4,6 +4,7 @@
 # Brotli compression algorithm with ModSecurity
 ##
 
+nginx_conf="/etc/nginx/nginx.conf"
 apt -y install libnginx-mod-brotli
 if ! grep -q -c brotli $nginx_conf; then
 	sed -i '/gzip_types/a\

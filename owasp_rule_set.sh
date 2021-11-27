@@ -24,6 +24,7 @@ else
 	echo "Your coreruleset directory is already in the right place! Skipping step..."
 fi
 
+modsec_main_conf="/etc/nginx/modsec/main.conf"
 if ! grep -q -c crs-setup.conf $modsec_main_conf;
 then
 	echo Include /etc/nginx/modsec/$coreruleset/crs-setup.conf >> $modsec_main_conf

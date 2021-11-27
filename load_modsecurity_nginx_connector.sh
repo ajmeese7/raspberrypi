@@ -4,6 +4,7 @@
 # Load the ModSecurity v3 Nginx Connector Module
 ##
 
+nginx_conf="/etc/nginx/nginx.conf"
 if ! grep -q -c ngx_http_modsecurity_module $nginx_conf;
 then
 	# https://www.baeldung.com/linux/insert-line-specific-line-number#using-sed
@@ -18,6 +19,7 @@ else
 fi
 
 # ModSecurity configuration file manipulation
+modsec_conf="/etc/nginx/modsec/modsecurity.conf"
 if [ ! -d /etc/nginx/modsec ]; then mkdir /etc/nginx/modsec; fi
 cp /usr/local/src/ModSecurity/modsecurity.conf-recommended $modsec_conf
 sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' $modsec_conf
@@ -25,6 +27,7 @@ sed -i 's/SecAuditLogParts ABIJDEFHZ/SecAuditLogParts ABCEFHJKZ/' $modsec_conf
 sed -i 's/SecResponseBodyAccess On/SecResponseBodyAccess Off/' $modsec_conf
 
 # create and populate the main.conf file
+modsec_main_conf="/etc/nginx/modsec/main.conf"
 if [ ! -f $modsec_main_conf ];
 then
 	echo Include /etc/nginx/modsec/modsecurity.conf >> $modsec_main_conf

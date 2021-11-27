@@ -4,6 +4,7 @@
 # Extra security measures
 ##
 
+nginx_conf="/etc/nginx/nginx.conf"
 if grep -q -c "# server_tokens" $nginx_conf;
 then
 	# disable leakage of information about nginx version
@@ -20,6 +21,7 @@ else
 	echo "Already configured additional nginx security measures! Skipping step..."
 fi
 
+nginx_default_site="/etc/nginx/sites-available/default"
 if ! grep -q -c "return 405" $nginx_default_site;
 then
 	sed -i '/listen \[::\]:80 default_server/a \
