@@ -4,6 +4,7 @@
 # Configure logging parameters for ModSecurity
 ##
 
+modsec_logrotate="/etc/logrotate.d/modsecurity"
 if [ ! -f $modsec_rotate ]; then
 sed -i "$ a\
 /var/log/modsec_audit.log\

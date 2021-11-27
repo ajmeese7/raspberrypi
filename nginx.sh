@@ -2,40 +2,6 @@
 # Much of these files is abstracted from this amazing article:
 # https://www.linuxbabe.com/security/modsecurity-nginx-debian-ubuntu
 
-# adds variables required for all the scripts to bashrc, so when the
-# update nginx file is ran later it has access to them
-username="${SUDO_USER:-${USER}}"
-if [ $username != 'root' ]; then
-	bashrc=/home/$username/.bashrc
-else
-	bashrc=~/.bashrc
-fi
-
-if ! grep -q -c nginx_conf $bashrc;
-then
-echo '
-# See https://github.com/ajmeese7/raspberrypi for context
-export nginx_conf="/etc/nginx/nginx.conf"
-export modsec_conf="/etc/nginx/modsec/modsecurity.conf"
-export modsec_main_conf="/etc/nginx/modsec/main.conf"
-export nginx_default_site="/etc/nginx/sites-available/default"
-export modsec_logrotate="/etc/logrotate.d/modsecurity"' | tee -a $bashrc
-
-	echo "Your .bashrc has been configured with all the necessary variables..."
-else
-	echo "Your .bashrc already has the necessary variables configured..."
-fi
-
-# Redefine all the variables again in case the sourcing below doesn't work
-nginx_conf="/etc/nginx/nginx.conf"
-modsec_conf="/etc/nginx/modsec/modsecurity.conf"
-modsec_main_conf="/etc/nginx/modsec/main.conf"
-nginx_default_site="/etc/nginx/sites-available/default"
-modsec_logrotate="/etc/logrotate.d/modsecurity"
-
-# Reload bashrc just to be safe
-. $bashrc # alternative to source
-
 # Install the lastest version of nginx
 sh ./install_nginx.sh
 
