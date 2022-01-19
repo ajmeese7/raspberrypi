@@ -17,7 +17,8 @@ sudo apt update -y
 sudo apt install gh -y
 
 # install PHP
-wget -q https://packages.sury.org/php/apt.gpg -O- | sudo apt-key add -
-sudo echo "deb https://packages.sury.org/php/ buster main" | sudo tee /etc/apt/sources.list.d/php.list
-sudo apt update -y
-sudo apt install php php-fpm -y
+sudo apt install apt-transport-https lsb-release ca-certificates wget -y
+sudo wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg 
+sudo sh -c 'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
+sudo apt update
+sudo apt install php8.0-common php8.0-cli php8.0-fpm -y
